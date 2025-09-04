@@ -82,7 +82,6 @@ features = {
     "BMI": bmi if bmi is not None else 0,
     "HighBP": 1 if high_bp else 0,
     "HighChol": 1 if high_chol else 0,
-    "PhysActivity": 1 if phys_activity else 0,
     "AgeGroup": int(group),
     "DiffWalk": 1 if diff_walk else 0,
     "HeartDiseaseorAttack": 1 if heart_disease else 0,
