@@ -238,7 +238,9 @@ packages = [
 with open("requirements.txt", "w") as f:
     f.write("\n".join(packages))
 
-!ls -l requirements.txt
+import os
+print(os.system("ls -l requirements.txt"))
+
 !head -n 10 requirements.txt
 
 pip install -r requirements.txt
