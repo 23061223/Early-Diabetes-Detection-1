@@ -4,6 +4,8 @@ import pandas as pd
 import joblib
 import shap
 import matplotlib.pyplot as plt
+import numpy as np
+
 
 # 1. Page config & title
 st.set_page_config(page_title="Early Diabetes Risk Assessment", layout="centered")
