@@ -9,3 +9,5 @@ shap
 pydantic
 kagglehub[pandas-datasets]
 streamlit
+joblib
+matplotlib
