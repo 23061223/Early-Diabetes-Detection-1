@@ -108,7 +108,12 @@ if st.button("Assess Risk"):
     # SHAP interpretability
     X_scaled = pipe.named_steps["scaler"].transform(input_df)
     shap_vals = explainer.shap_values(X_scaled)[0]
-    base_value = explainer.expected_value[1]
+    # Handle both scalar and list cases
+if isinstance(explainer.expected_value, (list, np.ndarray)):
+    base_value = explainer.expected_value[1]  # For multiclass
+else:
+    base_value = explainer.expected_value     # For binary classification
+
     exp = shap.Explanation(
         values=shap_vals,
         base_values=base_value,
