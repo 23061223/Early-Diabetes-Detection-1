@@ -96,6 +96,12 @@ input_df = pd.get_dummies(input_df, drop_first=True)
 input_df = input_df.reindex(columns=X_cols, fill_value=0)
 
 # 5. Prediction & feedback
+import shap
+
+explainer = shap.Explainer(model, X_train)
+shap_vals = explainer(X_test)
+
+
 if st.button("Assess Risk"):
     proba = pipe.predict_proba(input_df)[0, 1]
 
