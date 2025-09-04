@@ -1,0 +1,14 @@
+﻿%%bash
+cat << 'EOF' > requirements.txt
+fastapi
+uvicorn
+pandas
+numpy
+scikit-learn
+imbalanced-learn
+xgboost
+shap
+pydantic
+EOF
+Kagglehub[pandas-datasets]
+streamlit
