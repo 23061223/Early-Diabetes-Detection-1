@@ -241,7 +241,15 @@ with open("requirements.txt", "w") as f:
 import os
 print(os.system("ls -l requirements.txt"))
 
-!head -n 10 requirements.txt
+import streamlit as st
+
+if st.button("Show first 10 lines of requirements.txt"):
+    with open("requirements.txt", "r") as f:
+        for i in range(10):
+            line = f.readline()
+            if not line:
+                break
+            st.text(line.strip())
 
 pip install -r requirements.txt
 
