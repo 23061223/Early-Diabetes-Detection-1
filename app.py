@@ -54,10 +54,6 @@ high_chol = st.checkbox(
     help="High cholesterol often means LDL ≥130 mg/dL or total cholesterol ≥200 mg/dL."
 )
 
-phys_activity = st.checkbox(
-    "Engaged in physical activity (excluding job) in the past 30 days"
-)
-
 age = st.number_input(
     "Age (years)", min_value=18, max_value=120, step=1,
     help="Enter your actual age to assign an age group."
