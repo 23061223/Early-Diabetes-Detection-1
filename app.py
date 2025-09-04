@@ -1,96 +1,129 @@
+# app.py
 import streamlit as st
 import pandas as pd
 import joblib
 import shap
 import matplotlib.pyplot as plt
 
-# Load model and explainer
+# 1. Page config & title
+st.set_page_config(page_title="Early Diabetes Risk Assessment", layout="centered")
+st.title("🩺 Early Diabetes Risk Assessment")
+
+st.markdown(
+    "**Disclaimer:** This is a master’s project. The results are for reference only and not medical advice."
+)
+st.markdown("---")
+
+# 2. Load model, explainer, and template columns
 pipe = joblib.load("diabetes_pipeline.pkl")
 explainer = joblib.load("shap_explainer.pkl")
 
-# Load reference dataset for encoding
-file_name = "diabetes_binary_health_indicators_BRFSS2023.csv"
-df = pd.read_csv(file_name)
-X_full = df.drop(columns=["Diabetes_binary"])
-X_full_encoded = pd.get_dummies(X_full, drop_first=True)
-original_cols = X_full.columns
+# We need the original columns to reindex after get_dummies
+df_template = pd.read_csv("diabetes_binary_health_indicators_BRFSS2023.csv")
+X_full = df_template.drop(columns=["Diabetes_binary"])
+X_cols = pd.get_dummies(X_full, drop_first=True).columns
 
-# Streamlit UI
-st.title("🩺 Early Diabetes Risk Assessment")
-st.sidebar.header("Patient Information")
+# 3. Patient Information form
+st.header("Patient Information")
 
-# Collect inputs
-bmi = st.sidebar.number_input("BMI", min_value=10.0, max_value=60.0)
-phys_health = st.sidebar.slider("Physical Health (days)", 0, 30)
-ment_health = st.sidebar.slider("Mental Health (days)", 0, 30)
-age_group = st.sidebar.selectbox("Age Group", options=range(1, 13))
-kidney_disease = st.sidebar.selectbox("Kidney Disease", options=[1, 2, 9])
-high_bp = st.sidebar.selectbox("High Blood Pressure", options=[0, 1])
-high_chol = st.sidebar.selectbox("High Cholesterol", options=[0, 1])
-chol_check = st.sidebar.selectbox("Cholesterol Check", options=[0, 1])
-asthma = st.sidebar.selectbox("Asthma", options=[1, 2, 9])
-copd = st.sidebar.selectbox("COPD", options=[1, 2, 9])
-smoker = st.sidebar.selectbox("Smoker", options=[0, 1])
-stroke = st.sidebar.selectbox("Stroke", options=[0, 1])
-heart_disease_or_attack = st.sidebar.selectbox("Heart Disease or Attack", options=[0, 1])
-phys_activity = st.sidebar.selectbox("Physical Activity", options=[0, 1])
-hvy_alcohol_consump = st.sidebar.selectbox("Heavy Alcohol Consumption", options=[0, 1])
-any_healthcare = st.sidebar.selectbox("Any Healthcare", options=[0, 1])
-no_docbc_cost = st.sidebar.selectbox("Could Not See Doctor Because of Cost", options=[0, 1])
-gen_hlth = st.sidebar.selectbox("General Health", options=range(1, 6))
-diff_walk = st.sidebar.selectbox("Difficulty Walking", options=[0, 1])
-sex = st.sidebar.selectbox("Sex", options=[0, 1])
-education = st.sidebar.selectbox("Education", options=range(1, 7))
-income = st.sidebar.selectbox("Income", options=range(1, 12))
+# BMI via weight & height
+weight = st.number_input("Weight (kg)", min_value=30.0, max_value=200.0, step=0.1)
+height = st.number_input("Height (cm)", min_value=100.0, max_value=250.0, step=0.1)
 
-# Prepare input
-input_data = {col: 0 for col in original_cols}
-input_data.update({
-    "BMI": bmi,
-    "PhysHlth": phys_health,
-    "MentHlth": ment_health,
-    "AgeGroup": age_group,
-    "KidneyDisease": kidney_disease,
-    "HighBP": high_bp,
-    "HighChol": high_chol,
-    "CholCheck": chol_check,
-    "Asthma": asthma,
-    "COPD": copd,
-    "Smoker": smoker,
-    "Stroke": stroke,
-    "HeartDiseaseorAttack": heart_disease_or_attack,
-    "PhysActivity": phys_activity,
-    "HvyAlcoholConsump": hvy_alcohol_consump,
-    "AnyHealthcare": any_healthcare,
-    "NoDocbcCost": no_docbc_cost,
-    "GenHlth": gen_hlth,
-    "DiffWalk": diff_walk,
-    "Sex": sex,
-    "Education": education,
-    "Income": income
-})
+bmi = None
+if weight and height:
+    bmi = weight / ( (height / 100) ** 2 )
+    st.write(f"**Calculated BMI:** {bmi:.1f}")
+    if bmi < 18.5:
+        st.warning("Underweight (BMI < 18.5). Consider a health checkup.")
+    elif bmi < 25:
+        st.success("Healthy BMI (18.5–24.9). Keep it up!")
+    elif bmi < 30:
+        st.info("Overweight (BMI 25–29.9). Maintain a balanced diet and exercise.")
+    else:
+        st.error("Obese (BMI ≥ 30). Please consult a healthcare professional.")
 
-if st.sidebar.button("Assess Risk"):
-    input_df = pd.DataFrame([input_data])
-    input_df = pd.get_dummies(input_df, drop_first=True)
-    input_df = input_df.reindex(columns=X_full_encoded.columns, fill_value=0)
+# Tickboxes with hints
+high_bp = st.checkbox(
+    "High Blood Pressure",
+    help="High BP is typically systolic ≥130 mmHg or diastolic ≥80 mmHg."
+)
 
+high_chol = st.checkbox(
+    "High Cholesterol",
+    help="High cholesterol often means LDL ≥130 mg/dL or total cholesterol ≥200 mg/dL."
+)
+
+phys_activity = st.checkbox(
+    "Engaged in physical activity (excluding job) in the past 30 days"
+)
+
+age = st.number_input(
+    "Age (years)", min_value=18, max_value=120, step=1,
+    help="Enter your actual age to assign an age group."
+)
+# Map raw age to 1–13 groups: 18–24→1, 25–29→2, …, 80+→13
+group = min((age - 18) // 5 + 1, 13)
+
+diff_walk = st.checkbox("Serious difficulty walking or climbing stairs")
+
+heart_disease = st.checkbox("History of heart disease or heart attack")
+
+# “Physical Health” repurposed as >8 hours activity in last 30 days
+phys8 = st.checkbox(
+    "Spent more than 8 hours in physical activity (excluding job) in last 30 days"
+)
+
+alcohol = st.checkbox(
+    "Heavy alcohol consumption",
+    help="Men >14 drinks/week or women >7 drinks/week."
+)
+
+st.markdown("---")
+
+# 4. Build feature vector
+features = {
+    "BMI": bmi if bmi is not None else 0,
+    "HighBP": 1 if high_bp else 0,
+    "HighChol": 1 if high_chol else 0,
+    "PhysActivity": 1 if phys_activity else 0,
+    "AgeGroup": int(group),
+    "DiffWalk": 1 if diff_walk else 0,
+    "HeartDiseaseorAttack": 1 if heart_disease else 0,
+    "PhysHlth": 1 if phys8 else 0,
+    "HvyAlcoholConsump": 1 if alcohol else 0,
+}
+# Fill missing features with 0
+input_df = pd.DataFrame([features])
+input_df = pd.get_dummies(input_df, drop_first=True)
+input_df = input_df.reindex(columns=X_cols, fill_value=0)
+
+# 5. Prediction & feedback
+if st.button("Assess Risk"):
     proba = pipe.predict_proba(input_df)[0, 1]
-    st.metric("Diabetes Risk Score", f"{proba:.2%}")
 
-    # SHAP explanation
+    # Color‐coded risk score
+    if proba < 0.5:
+        st.success(f"Diabetes Risk Score: {proba:.2%}")
+        st.write("🎉 Congrats! You have a low risk. Continue your healthy lifestyle.")
+    else:
+        st.error(f"Diabetes Risk Score: {proba:.2%}")
+        st.write("⚠️ High risk. Consider a medical checkup and maintain a healthy lifestyle.")
+
+    # SHAP interpretability
     X_scaled = pipe.named_steps["scaler"].transform(input_df)
     shap_vals = explainer.shap_values(X_scaled)[0]
     base_value = explainer.expected_value[1]
-
-    explanation = shap.Explanation(
+    exp = shap.Explanation(
         values=shap_vals,
         base_values=base_value,
         data=X_scaled,
-        feature_names=input_df.columns.tolist()
+        feature_names=input_df.columns.tolist(),
     )
-
     st.subheader("Feature Contributions")
     fig, ax = plt.subplots()
-    shap.plots.waterfall(explanation, max_display=10, show=False)
+    shap.plots.waterfall(exp, max_display=8, show=False)
     st.pyplot(fig)
+
+st.markdown("---")
+st.markdown("**Disclaimer:** This assessment is for reference only, not a clinical diagnosis.")
