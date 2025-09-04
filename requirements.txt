@@ -1,13 +1,8 @@
-fastapi
-uvicorn
+streamlit
 pandas
 numpy
 scikit-learn
-imbalanced-learn
 xgboost
 shap
-pydantic
-kagglehub[pandas-datasets]
-streamlit
 joblib
 matplotlib
