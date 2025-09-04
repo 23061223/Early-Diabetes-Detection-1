@@ -251,7 +251,9 @@ if st.button("Show first 10 lines of requirements.txt"):
                 break
             st.text(line.strip())
 
-pip install -r requirements.txt
+import subprocess
+subprocess.run(["pip", "install", "-r", "requirements.txt"])
+
 
 !mkdir -p "/content/drive/MyDrive/Colab Notebooks/my_project"
 
